@@ -1,39 +1,34 @@
-const router = require("express").Router();
-const User = require("../models/User");
-const bcrypt = require("bcrypt");
+const express = require('express');
+const router = express.Router();
 
-//REGISTER
-router.post("/register", async (req, res) => {
-  try {
-    const salt = await bcrypt.genSalt(10);
-    const hashedPass = await bcrypt.hash(req.body.password, salt);
-    const newUser = new User({
-      username: req.body.username,
-      email: req.body.email,
-      password: hashedPass,
-    });
+// import controller
+const {
+    signup,
+    accountActivation,
+    signin,
+    forgotPassword,
+    resetPassword,
+    // googleLogin,
+    // facebookLogin
+} = require('../controllers/auth');
 
-    const user = await newUser.save();
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
+// import validators
+const {
+    userSignupValidator,
+    userSigninValidator,
+    forgotPasswordValidator,
+    resetPasswordValidator
+} = require('../validators/auth');
+const { runValidation } = require('../validators');
 
-//LOGIN
-router.post("/login", async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.body.username });
-    !user && res.status(400).json("Wrong credentials!");
-
-    const validated = await bcrypt.compare(req.body.password, user.password);
-    !validated && res.status(400).json("Wrong credentials!");
-
-    const { password, ...others } = user._doc;
-    res.status(200).json(others);
-  } catch (err) {
-    res.status(500).json(err);
-  }
-});
+router.post('/signup', userSignupValidator, runValidation, signup);
+router.post('/account-activation', accountActivation);
+router.post('/signin', userSigninValidator, runValidation, signin);
+// forgot reset password
+router.put('/forgot-password', forgotPasswordValidator, runValidation, forgotPassword);
+router.put('/reset-password', resetPasswordValidator, runValidation, resetPassword);
+// google and facebook
+// router.post('/google-login', googleLogin);
+// router.post('/facebook-login', facebookLogin);
 
 module.exports = router;
